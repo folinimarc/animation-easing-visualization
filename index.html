@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easing Functions Visualization</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #coordinate-system {
+            width: 100%;
+            height: 400px;
+            margin: 20px auto;
+        }
+        .example {
+            margin: 20px 0;
+        }
+        #color-patch {
+            width: 200px;
+            height: 200px;
+            background-color: blue;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col text-center">
+            <h1 class="m-4">Animation Easing Visualization</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6 text-center">
+                <div class="col text-center d-flex align-items-center justify-content-center">
+                    <label for="easing-select" class="mr-2 mb-3" style="white-space: nowrap;">Easing function:</label>
+                    <select id="easing-select" class="form-control mb-3"></select>
+                </div>
+                <svg id="coordinate-system"></svg>
+                <p class="p-2 text-justify">
+                    Animation easing functions control the pacing of an animation by 
+                    modifying the rate of change over time. The input is a normalized 
+                    time value (0 to 1), where 0 marks the start and 1 
+                    marks the end of the animation. This value guides outputs 
+                    like color blending or movement along a path, creating effects 
+                    such as acceleration, deceleration, and smooth oscillations.
+                </p>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="example">
+                    <svg id="circle-dot-svg" width="400" height="400"></svg>
+                </div>
+                <div class="example">
+                    <div id="color-patch"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
