@@ -14,11 +14,15 @@
         .example {
             margin: 20px 0;
         }
-        #color-patch {
-            width: 200px;
-            height: 200px;
-            background-color: blue;
+        #scale-patch {
+            width: 150px;
+            height: 150px;
             margin: 20px auto;
+        }
+        #star {
+            margin: 20px auto;
+            width: 150px;
+            height: 150px;
         }
     </style>
 </head>
@@ -37,25 +41,246 @@
                 </div>
                 <svg id="coordinate-system"></svg>
                 <p class="p-2 text-justify">
-                    Animation easing functions control the pacing of an animation by 
-                    modifying the rate of change over time. The input is a normalized 
-                    time value (0 to 1), where 0 marks the start and 1 
-                    marks the end of the animation. This value guides outputs 
-                    like color blending or movement along a path, creating effects 
-                    such as acceleration, deceleration, and smooth oscillations.
+                    Easing Functions describe the relationship between a normalized time value (x-axis) and a normalized animation progress value (y-axis).
+                    The normalized time value will move steadily from 0 to 1, with 0 and 1 indicating the start and end time of the animation.
+                    The normalized animation progress ranges from 0 to 1 and indicates how far along the animation is relative to the start and end states. These states can any property that can be interpolated over time, such as color, position, scale, opacity and many more.
+
                 </p>
             </div>
             <div class="col-lg-6 text-center">
                 <div class="example">
-                    <svg id="circle-dot-svg" width="400" height="400"></svg>
+                    <svg id="circle-dot-svg" width="200" height="200"></svg>
                 </div>
                 <div class="example">
-                    <div id="color-patch"></div>
+                    <svg id="scale-patch" viewBox="0 0 24 24" fill="blue">
+                        <circle cx="12" cy="12" r="10" />
+                    </svg>
                 </div>
+                <div class="example">
+                    <svg id="star" viewBox="0 0 24 24" fill="blue">
+                        <polygon points="12,2 15,8 22,9 17,14 18,21 12,18 6,21 7,14 2,9 9,8" />
+                    </svg>
+                </div>            
             </div>
         </div>
     </div>
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        const svg = d3.select('#coordinate-system');
+        const width = svg.node().getBoundingClientRect().width;
+        const height = +svg.attr('height') || 400;
+        const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerWidth]);
+        const yScale = d3.scaleLinear().domain([0, 1]).range([innerHeight, 0]);
+
+        const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+        g.append('g')
+            .call(d3.axisLeft(yScale).tickValues([0, 0.5, 1]))
+            .append('text')
+            .attr('fill', '#000')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -innerHeight / 2)
+            .attr('y', -50)
+            .attr('dy', '0.71em')
+            .attr('text-anchor', 'middle')
+            .style('font-size', '14px')
+            .style('font-weight', 'bold')
+            .text('Animation Progress');
+
+        g.append('g')
+            .attr('transform', `translate(0,${innerHeight})`)
+            .call(d3.axisBottom(xScale).tickValues([0, 0.5, 1]))
+            .append('text')
+            .attr('fill', '#000')
+            .attr('x', innerWidth / 2)
+            .attr('y', 40)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '14px')
+            .style('font-weight', 'bold')
+            .text('Normalized Animation Time');
+
+        g.selectAll('.tick text')
+            .style('font-size', '12px')
+            .style('font-weight', 'normal')
+            .attr('dy', '0.35em');
+
+        const line = d3.line()
+            .x(d => xScale(d[0]))
+            .y(d => yScale(d[1]));
+
+        const easingFunctions = {
+            linear: d3.easeLinear,
+            easeQuadIn: d3.easeQuadIn,
+            easeQuadOut: d3.easeQuadOut,
+            easeQuadInOut: d3.easeQuadInOut,
+            easeExpIn: d3.easeExpIn,
+            easeExpOut: d3.easeExpOut,
+            easeExpInOut: d3.easeExpInOut,
+            easeSinIn: d3.easeSinIn,
+            easeSinOut: d3.easeSinOut,
+            easeSinInOut: d3.easeSinInOut,
+            easeBounceIn: d3.easeBounceIn,
+            easeBounceOut: d3.easeBounceOut,
+            easeBounceInOut: d3.easeBounceInOut
+            // Add more easing functions as needed
+        };
+
+        // Populate the dropdown dynamically from the easingFunctions object keys
+        const easingSelect = d3.select('#easing-select');
+        easingSelect.selectAll('option')
+            .data(Object.keys(easingFunctions))
+            .enter()
+            .append('option')
+            .attr('value', d => d)
+            .text(d => d);
+
+        let currentEasing = easingFunctions.linear;
+
+        function updateEasingFunction(easing) {
+            currentEasing = easingFunctions[easing];
+            const data = d3.range(0, 1.01, 0.01).map(t => [t, currentEasing(t)]);
+            
+            const path = g.selectAll('.line').data([data]);
+
+            path.enter()
+                .append('path')
+                .attr('class', 'line')
+                .attr('fill', 'none')
+                .attr('stroke', 'steelblue')
+                .attr('stroke-width', 2)
+                .merge(path)
+                .transition()
+                .duration(500)
+                .attr('d', line);
+
+            path.exit().remove();
+
+            // Restart the animation
+            animate();
+        }
+
+        d3.select('#easing-select').on('change', function() {
+            updateEasingFunction(this.value);
+        });
+
+        const scalePatch = d3.select('#scale-patch');
+        const star = d3.select('#star');
+
+        // Add a line connecting the two points starting at x = 0 and y = 0
+        const xConnectingLine = g.append('line')
+            .attr('stroke', 'gray')
+            .attr('stroke-dasharray', '5,5')
+            .attr('x1', xScale(0))
+            .attr('y1', yScale(0))
+            .attr('x2', xScale(0))
+            .attr('y2', yScale(0));
+
+        // Add a line connecting the y-axis point to the easing line
+        const yConnectingLine = g.append('line')
+            .attr('stroke', 'gray')
+            .attr('stroke-dasharray', '5,5')
+            .attr('x1', xScale(0))
+            .attr('y1', yScale(0))
+            .attr('x2', xScale(0))
+            .attr('y2', yScale(0));
+
+        // Add a circle element to the SVG for the moving point
+        const movingPoint = g.append('circle')
+            .attr('r', 5)
+            .attr('fill', 'blue');
+
+        // Add a second point that moves at constant speed along the x-axis
+        const xAxisPoint = g.append('circle')
+            .attr('cx', xScale(0))
+            .attr('cy', yScale(0))
+            .attr('r', 5)
+            .attr('fill', 'blue');
+
+        // Add a third point that moves at constant speed along the y-axis
+        const yAxisPoint = g.append('circle')
+            .attr('cx', xScale(0))
+            .attr('cy', yScale(0))
+            .attr('r', 5)
+            .attr('fill', 'blue');
+
+        // Add a circle element to the new SVG for the spinning dot
+        const circleDotSvg = d3.select('#circle-dot-svg');
+        const spinningDot = circleDotSvg.append('circle')
+            .attr('r', 10)
+            .attr('fill', 'black')
+            .attr('cx', 100)
+            .attr('cy', 100);
+
+        function animate() {
+            let duration = 2000;
+
+            spinningDot.transition()
+                .duration(duration)
+                .ease(currentEasing)
+                .attrTween('transform', () => t => {
+                    const angle = t * 2 * Math.PI;
+                    const x = 100 + 50 * Math.cos(angle);
+                    const y = 100 + 50 * Math.sin(angle);
+                    return `translate(${x - 100}, ${y - 100})`;
+                })
+                .on('end', animate);
+
+            scalePatch.transition()
+                .duration(duration)
+                .ease(currentEasing)
+                .styleTween('transform', () => t => {
+                    const scale = 0 + 1 * t;  // Scale from 1 to 1.5
+                    return `scale(${scale})`;
+                });
+
+            star.transition()
+                .duration(duration)
+                .ease(currentEasing)
+                .styleTween('opacity', () => t => d3.interpolateNumber(0, 1)(t));
+
+            movingPoint.transition()
+                .duration(duration)
+                .ease(d3.easeLinear)
+                .attrTween('cx', () => t => xScale(t))
+                .attrTween('cy', () => t => yScale(currentEasing(t)));
+
+            xAxisPoint.transition()
+                .duration(duration)
+                .ease(d3.easeLinear)
+                .attrTween('cx', () => t => xScale(t))
+                .attr('cy', yScale(0));
+
+            xConnectingLine.transition()
+                .duration(duration)
+                .ease(d3.easeLinear)
+                .attrTween('x1', () => t => xScale(t))
+                .attr('y1', yScale(0))
+                .attrTween('x2', () => t => xScale(t))
+                .attrTween('y2', () => t => yScale(currentEasing(t)));
+
+            yAxisPoint.transition()
+                .duration(duration)
+                .ease(currentEasing)
+                .attr('cx', xScale(0))
+                .attrTween('cy', () => t => yScale(t));
+
+            yConnectingLine.transition()
+                .duration(duration)
+                .ease(d3.easeLinear)
+                .attr('x1', xScale(0))
+                .attrTween('y1', () => t => yScale(currentEasing(t)))
+                .attrTween('x2', () => t => xScale(t))
+                .attrTween('y2', () => t => yScale(currentEasing(t)));
+        }
+
+        updateEasingFunction('linear');
+        animate();
+    });
+    </script>
 </body>
 </html>
